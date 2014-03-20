@@ -1,0 +1,22 @@
+body {
+	margin: 20px;
+	background-color: #555;
+}
+
+canvas {
+	border: 2px solid black;
+	cursor: default;
+}
+canvas:active {
+	cursor: nwse-resize;
+}
+
+.thumbnail {
+	width: 100px;
+	height: 100px;
+	cursor: pointer;
+	opacity: 0.5;
+}
+.thumbnail.selected {
+	opacity: 1.0;
+}
