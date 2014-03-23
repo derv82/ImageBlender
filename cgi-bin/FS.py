@@ -8,10 +8,10 @@ class FS(object):
 
 	@staticmethod
 	def getImageDir(search_term):
-		from os import path, makedirs
-		directory = path.join('./', search_term)
+		from os import path, mkdir
+		directory = path.join('..', 'images', search_term)
 		if not path.exists(directory):
-			makedirs(directory)
+			mkdir(directory)
 		return directory
 
 	@staticmethod
@@ -76,10 +76,10 @@ class FS(object):
 	@staticmethod
 	def saveImagesToFile(images, directory, next_image_index):
 		from json import loads, dumps
-		from os import path, makedirs
+		from os import path, mkdir
 
 		if not path.exists(directory):
-			makedirs(directory)
+			mkdir(directory)
 
 		allJsonPath = path.join(directory, 'all.json')
 		if path.exists(allJsonPath):

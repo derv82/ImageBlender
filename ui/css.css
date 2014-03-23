@@ -1,16 +1,11 @@
-body {
-	margin: 20px;
-	background-color: #555;
+.jumbotron {
+	padding-bottom: 60px !important;
 }
-
 canvas {
 	border: 2px solid black;
 	cursor: default;
+	margin-bottom: 10px;
 }
-canvas:active {
-	cursor: nwse-resize;
-}
-
 .thumbnail {
 	width: 100px;
 	height: 100px;

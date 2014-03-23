@@ -34,6 +34,11 @@ class Google(object):
 		from Image import Image
 		images = []
 		for (current_index, json_image) in enumerate(json['responseData']['results']):
+			imageUrl = json_image['unescapedUrl']
+			meta = httpy.get_meta(imageUrl, timeout=5)
+			if 'Content-type' not in meta or 'image' not in meta['Content-Type']:
+				# Image is not an image.
+				continue
 			image = Image(json=json_image)
 			image.imageIndex = start_index + current_index + 1
 			images.append(image)
