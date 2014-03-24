@@ -35,6 +35,7 @@ function init() {
 			.attr('width', w)
 			.attr('height', w);
 		redraw();
+		$('#sliderObject').width('100%');
 	});
 	$(window).resize();
 
@@ -53,6 +54,23 @@ function init() {
 			getCanvas().css('background-color', color);
 		});
 	$('#imageColor').val('rgba(255, 255, 255, 1)');
+
+	$('#imageOpacity')
+		.slider({
+			id: 'sliderObject',
+			min: 0.0,
+			max: 1.0,
+			step: 0.05,
+			selection: 'none',
+			tooltip: 'show',
+			formater: function(input) {
+				return input.toFixed(2);
+			}
+		})
+		.on('slide', function(ev) {
+			OPACITY = ev.value;
+			redraw();
+		});
 }
 
 /*
@@ -73,16 +91,18 @@ images: [{
 function addImage(image) {
 	var $img = $('<img/>');
 	var $thumb = $('<img/>')
-		.addClass('thumbnail thumbnail-sm active')
+		.addClass('thumbnail thumbnail-sm active btn-success')
 		.attr('src', image.localThumbPath ? localThumbPath : image.tbUrl)
 		.click(function() {
 			$img.toggleClass('active');
 			$(this).toggleClass('active');
+			$(this).toggleClass('btn-success');
+			$(this).toggleClass('btn-danger');
 			updateGlobalOpacity();
 			redraw();
 			$('#thumbnailCount').text("(" + getVisibleImageCount() + "/" + $IMAGES.length + ")");
 		});
-	$('<div class="col-xs-4 col-sm-2 col-md-6 col-lg-4 col-xl-3"/>')
+	$('<div class="col-xs-6 col-sm-2 col-md-6 col-lg-4 col-xl-3"/>')
 		.append($thumb)
 		.prependTo( $('#thumbTable') );
 
@@ -173,5 +193,7 @@ function getVisibleImageCount() {
 function updateGlobalOpacity() {
 	var visibleImages = Math.max(getVisibleImageCount(), 1);
 	OPACITY = 1.0 / visibleImages;
-	$('#imageOpacity').val(OPACITY.toFixed(2));
+	$('#imageOpacity')
+		.val(OPACITY.toFixed(2))
+		.slider('setValue', OPACITY.toFixed(2));
 }

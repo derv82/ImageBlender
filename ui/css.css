@@ -1,6 +1,3 @@
-.jumbotron {
-	padding-bottom: 60px !important;
-}
 h1 {
 	text-shadow: 1px 3px 5px rgba(0, 0, 0, 0.5);
 }
@@ -71,4 +68,9 @@ canvas {
     animation: anim-rotate 2s infinite linear;
 	opacity: 1;
 	max-width: 50px;
+}
+
+#sliderObject {
+	width: 100%;
+	height: 100%;
 }
