@@ -20,6 +20,10 @@
 		       rel="stylesheet"
 		      type="text/css"
 		      >
+		<link href="ui/bootstrap-colorpicker.css"
+		       rel="stylesheet"
+		      type="text/css"
+		      >
 	</head>
 	<body>
 
@@ -37,13 +41,13 @@
 	            <span class="icon-bar"></span>
 	            <span class="icon-bar"></span>
 	          </button>
-	          <a class="navbar-brand" href="#">Bootstrap theme</a>
+	          <a class="navbar-brand" href="#">Image Blender</a>
 	        </div>
 	        <div class="navbar-collapse collapse">
 	          <ul class="nav navbar-nav">
 	            <li class="active"><a href="#">Home</a></li>
+	            <li><a href="#gallery">Gallery</a></li>
 	            <li><a href="#about">About</a></li>
-	            <li><a href="#contact">Contact</a></li>
 	          </ul>
 	        </div><!--/.nav-collapse -->
 	      </div>
@@ -51,7 +55,7 @@
 
 		<div class="jumbotron text-center">
 		  <h1>
-		    <span class="glyphicon glyphicon-picture"></span>
+		    <span class="glyphicon glyphicon-picture blended-image"></span>
 		    Image Blender
 		  </h1>
 		  <div class="col-xs-0 col-sm-2 col-lg-3"></div>
@@ -60,12 +64,18 @@
 		      <input type="text"
 		            class="form-control"
 		               id="searchTerm"
+		            value="butterfly"
 		             >
 		      <span class="input-group-btn">
-		        <button class="btn btn-default"
+		        <button class="btn btn-default has-spinner"
 		                 type="button"
 		                   id="searchButton"
-		                >Get Images</button>
+		                >
+		        	<span class="spinner">
+		        		<i class="glyphicon glyphicon-refresh"></i>
+		        	</span>
+		        	Add More Images
+		        </button>
 		      </span>
 		    </div><!-- /input-group -->
 		  </div><!-- /.col-lg-6 -->
@@ -73,22 +83,112 @@
 		</div>
 
 		<!-- -->
-		<div class="col-xs-12 col-md-8">
-			<div class="panel panel-default" id="imagePanel">
-				<div class="panel-heading">Blended Image</div>
-				<div class="panel-body text-center">
-					<canvas id="mainCanvas"></canvas>
+		<div class="container-fluid">
+			<div class="col-xs-12 col-md-8">
+				<div class="panel panel-default" id="imagePanel">
+					<div class="panel-heading">
+						<span class="glyphicon glyphicon-picture">
+						</span>
+						Blended Image
+					</div>
+					<div class="panel-body text-center">
+						<canvas id="mainCanvas"
+						     class="thumbnail"
+						        >
+						</canvas>
+					</div>
 				</div>
 			</div>
-		</div>
 
-		<div class="col-xs-12 col-md-4">
-			<div class="panel panel-default">
-				<div class="panel-heading">Images</div>
-				<div class="panel-body text-center" id="thumbTable">
-					
+			<div class="col-xs-12 col-md-4">
+				<div class="col-xs-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<a data-toggle="collapse" 
+							          href="#collapseSettings"
+							   >
+								<span class="glyphicon glyphicon-wrench">
+								</span>
+								Options
+							</a>
+						</div>
+						<div class="panel-collapse collapse in"
+						        id="collapseSettings">
+							<div class="panel-body text-center">
+								<div class="input-group">
+									<span class="input-group-addon">
+										Opacity
+									</span>
+									<input type="text"
+									      class="form-control"
+									placeholder="leave empty for auto"
+									         id="imageOpacity" disabled />
+									<!--
+									<span class="input-group-btn">
+										<button class="btn btn-default" 
+										         type="button" disabled>
+											Set
+										</button>
+									</span>
+									-->
+								</div>
+								<br>
+								<div class="input-group colorPicker">
+									<span class="input-group-addon">
+										Color
+									</span>
+									<input type="text"
+									      class="form-control"
+									         id="imageColor"
+									      value="" />
+									<span class="input-group-addon">
+										<i></i>
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-xs-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<a data-toggle="collapse" 
+							          href="#collapseShare"
+							         class="collapsed"
+							   >
+							  	<span class="glyphicon glyphicon-share">
+							  	</span>
+							  	Save &amp; Share
+						  	</a>
+						</div>
+						<div class="panel-collapse collapse out"
+						        id="collapseShare">
+							<div class="panel-body text-center">
+							</div>
+						</div>
+					</div>
+				</div><div class="col-xs-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<a data-toggle="collapse" 
+							          href="#collapseImages"
+							   >
+								<span class="glyphicon glyphicon-th">
+								</span>
+								Choose Images
+								<span id="thumbnailCount"></span>
+							</a>
+						</div>
+						<div class="panel-collapse collapse in"
+						        id="collapseImages">
+							<div class="panel-body text-center"
+							        id="thumbTable">
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
+
 		</div>
 
 		<!--
@@ -97,6 +197,7 @@
 		-->
 		<script src="js/jquery-2.1.0.js"></script>
 		<script src="js/bootstrap.js"></script>
+		<script src="js/bootstrap-colorpicker.js"></script>
 		<script src="js/js.js"></script>
 	</body>
 </html>

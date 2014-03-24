@@ -30,13 +30,29 @@ function init() {
 	$(window).resize(function() {
 		var $canvas = $('#mainCanvas');
 
-		var w = $canvas.parent().width() * 0.9;
+		var w = $canvas.parent().width() - $canvas.position().left / 2;
 		$canvas
 			.attr('width', w)
 			.attr('height', w);
 		redraw();
 	});
 	$(window).resize();
+
+	$('.colorPicker')
+		.colorpicker({
+			'format' : 'rgba',
+			'color' : $canvas.css('background-color')
+		})
+		.on('changeColor', function (ev) {
+			var rgba = ev.color.toRGB();
+			var color = "rgba("
+			 + rgba.r + ", "
+			 + rgba.g + ", "
+			 + rgba.b + ", "
+			 + rgba.a + ")";
+			getCanvas().css('background-color', color);
+		});
+	$('#imageColor').val('rgba(255, 255, 255, 1)');
 }
 
 /*
@@ -57,20 +73,21 @@ images: [{
 function addImage(image) {
 	var $img = $('<img/>');
 	var $thumb = $('<img/>')
-		.addClass('thumbnail selected')
+		.addClass('thumbnail thumbnail-sm active')
 		.attr('src', image.localThumbPath ? localThumbPath : image.tbUrl)
 		.click(function() {
-			$img.toggleClass('selected');
-			$(this).toggleClass('selected');
+			$img.toggleClass('active');
+			$(this).toggleClass('active');
 			updateGlobalOpacity();
 			redraw();
+			$('#thumbnailCount').text("(" + getVisibleImageCount() + "/" + $IMAGES.length + ")");
 		});
 	$('<div class="col-xs-4 col-sm-2 col-md-6 col-lg-4 col-xl-3"/>')
 		.append($thumb)
-		.appendTo( $('#thumbTable') );
+		.prependTo( $('#thumbTable') );
 
 	$img
-		.addClass('selected')
+		.addClass('active')
 		.attr('src', image.localPath ? localPath : image.unescapedUrl)
 		.load(function() {
 			CONTEXT.globalAlpha = OPACITY;
@@ -94,12 +111,11 @@ function addImage(image) {
 }
 
 function searchImages(searchTerm) {
-	var searchIndex = $(this).data('search_index');
+	$('#searchButton').addClass('active');
+	var searchIndex = $('#searchTerm').data('search_index');
 	if (searchIndex === undefined) {
 		searchIndex = 0;
 	}
-
-	$(this).data('search_index', searchIndex + 4);
 
 	var apiArgs = {
 		'method' : 'getImages',
@@ -108,6 +124,7 @@ function searchImages(searchTerm) {
 	};
 	$.getJSON('./cgi-bin/API.cgi', apiArgs)
 		.done(function(json) {
+			$('#searchButton').removeClass('active');
 			if ('error' in json) {
 				if ('trace' in json) {
 					console.log(json.trace);
@@ -123,8 +140,12 @@ function searchImages(searchTerm) {
 				     arrIndex++) {
 				addImage(json.images[arrIndex]);
 			}
+			$('#searchTerm').data('search_index', searchIndex + 4);
+			//$('#searchButton').text('Get More Images');
+			$('#thumbnailCount').text("(" + getVisibleImageCount() + "/" + $IMAGES.length + ")");
 		})
 		.fail(function() {
+			$('#searchButton').removeClass('active');
 			console.log('Failure to complete request to /cgi-bin/API.cgi');
 		});
 }
@@ -133,7 +154,7 @@ function redraw() {
 	var $canvas = getCanvas();
 	CONTEXT.clearRect(0, 0, $canvas.width(), $canvas.height());
 	for (var i = 0; i < $IMAGES.length; i++) {
-		if ($IMAGES[i].hasClass('selected')) {
+		if ($IMAGES[i].hasClass('active')) {
 			$IMAGES[i].load();
 		}
 	}
@@ -142,7 +163,7 @@ function redraw() {
 function getVisibleImageCount() {
 	var count = 0;
 	for (var i = 0; i < $IMAGES.length; i++ ){
-		if ($IMAGES[i].hasClass('selected')) {
+		if ($IMAGES[i].hasClass('active')) {
 			count++;
 		}
 	}
@@ -152,4 +173,5 @@ function getVisibleImageCount() {
 function updateGlobalOpacity() {
 	var visibleImages = Math.max(getVisibleImageCount(), 1);
 	OPACITY = 1.0 / visibleImages;
+	$('#imageOpacity').val(OPACITY.toFixed(2));
 }

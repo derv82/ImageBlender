@@ -24,6 +24,13 @@ class Google(object):
 		from json import loads
 		json = loads(response)
 
+		# TODO Check for rate limit
+		'''{
+			"responseData": null,
+			"responseDetails": "qps rate exceeded",
+			"responseStatus": 503
+		}'''
+
 		if 'responseData' not in json or \
 		   json['responseData'] == None or \
 			 'results' not in json['responseData']:
@@ -39,9 +46,13 @@ class Google(object):
 			if 'Content-type' not in meta or 'image' not in meta['Content-Type']:
 				# Image is not an image.
 				continue
-			image = Image(json=json_image)
-			image.imageIndex = start_index + current_index + 1
-			images.append(image)
+			try:
+				image = Image(json=json_image)
+				image.imageIndex = start_index + current_index + 1
+				images.append(image)
+			except Exception, e:
+				# Don't fail completely when deserializing single images
+				pass
 		return images
 
 if __name__ == '__main__':

@@ -31,8 +31,11 @@ class Image(object):
 		# Get file extension from URL
 		import re
 		m = re.search('.*\\.([jpegJPEGpngPNGgifGIF]{3,4}).*', json.get('unescapedUrl'))
-		self.imageExtension = m.group(1).lower()
-
+		if m != None:
+			self.imageExtension = m.group(1).lower()
+		else:
+			raise Exception('no extension found for ' + json['unescapedUrl'])
+		
 	def toJSON(self):
 		result = self.toDict()
 		if self.localPath != None:
