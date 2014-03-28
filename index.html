@@ -33,59 +33,90 @@
 
 		<div class="navbar navbar-inverse navbar-fixed-top"
 		     role="navigation">
-	      <div class="container">
-	        <div class="navbar-header">
-	          <button type="button" 
-	                 class="navbar-toggle"
-	           data-toggle="collapse"
-	           data-target=".navbar-collapse"
-	                  >
-	            <span class="sr-only">Toggle navigation</span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	            <span class="icon-bar"></span>
-	          </button>
-	          <a class="navbar-brand" href="#">Image Blender</a>
-	        </div>
-	        <div class="navbar-collapse collapse">
-	          <ul class="nav navbar-nav">
-	            <li class="active"><a href="#">Home</a></li>
-	            <li><a href="#gallery">Gallery</a></li>
-	            <li><a href="#about">About</a></li>
-	          </ul>
-	        </div><!--/.nav-collapse -->
-	      </div>
-	    </div>
+		  <div class="container">
+			<div class="navbar-header">
+			  <button type="button" 
+					 class="navbar-toggle"
+			   data-toggle="collapse"
+			   data-target=".navbar-collapse"
+					  >
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			  </button>
+			  <a class="navbar-brand" href="#">Image Blender</a>
+			</div>
+			<div class="navbar-collapse collapse">
+			  <ul class="nav navbar-nav">
+				<li class="active"><a href="#">Home</a></li>
+				<li><a href="#gallery">Gallery</a></li>
+				<li><a href="#about">About</a></li>
+			  </ul>
+			</div><!--/.nav-collapse -->
+		  </div>
+		</div>
 
 		<div class="jumbotron text-center">
 			<div class="container text-center">
-			  <h1>
-			    <span class="glyphicon glyphicon-picture blended-image"></span>
-			    Image Blender
-			  </h1>
-			  <div class="input-group input-group-lg">
-			      <input type="text"
-			            class="form-control"
-			               id="searchTerm"
-			            value="tree"
-			             >
-			      <span class="input-group-btn">
-			        <button class="btn btn-primary has-spinner"
-			                 type="button"
-			                   id="searchButton"
-			                >
-			        	<span class="spinner">
-			        		<i class="glyphicon glyphicon-refresh"></i>
-			        	</span>
-			        	More
-			        </button>
-			      </span>
-			  </div><!-- /input-group -->
-			</div>
-		</div>
+				<h1>
+					<span class="glyphicon glyphicon-picture blended-image"></span>
+					Image Blender
+				</h1>
+				<!-- Search input-group -->
+				<div class="input-group input-group-lg">
+					<input type="text"
+					      class="form-control"
+					         id="searchTerm"
+					      value="tree"
+					>
+					<span class="input-group-btn">
+						<button class="btn btn-primary has-spinner"
+						         type="button"
+						           id="searchButton"
+							>
+							<span class="spinner">
+								<i class="glyphicon glyphicon-refresh">
+								</i>
+							</span>
+							More
+						</button>
+					</span>
+				</div><!-- End of search input-group -->
 
-		<!-- -->
+				<br>
+
+				<!-- Message -->
+				<div class="col-xs-12 col-md-6 col-md-offset-3 message">
+					<div class="panel panel-danger">
+						<button type="button"
+						       class="close"
+						 aria-hidden="true"
+							>&times;
+						</button>
+
+						<div class="panel-heading">
+							Error
+						</div>
+						<div class="panel-body panel-danger"
+							>
+							<h4 class="text-danger text-lg"
+							       id="errorTitle"
+							></h4>
+							<pre id="errorBody"
+							  class="prettyprint linenums text-left text-danger"
+								>
+								Error message here.
+							</pre>
+						</div>
+					</div>
+				</div> <!-- End of Message -->
+			</div> <!-- End of container -->
+		</div> <!-- End of jumbotron -->
+
+		<!-- Main container -->
 		<div class="container-fluid">
+
 			<div class="col-xs-12 col-md-8">
 				<div class="panel panel-default" id="imagePanel">
 					<div class="panel-heading">

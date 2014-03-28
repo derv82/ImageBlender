@@ -22,21 +22,41 @@ class Google(object):
 			raise e
 
 		from json import loads
-		json = loads(response)
+		try:
+			json = loads(response)
+		except Exception, e:
+			raise Exception("Got %s while loading more images" % e.message)
 
-		# TODO Check for rate limit
-		'''{
-			"responseData": null,
-			"responseDetails": "qps rate exceeded",
-			"responseStatus": 503
-		}'''
+		from ImageResponse import ImageResponse
+		response = ImageResponse()
 
-		if 'responseData' not in json or \
-		   json['responseData'] == None or \
-			 'results' not in json['responseData']:
-			raise Exception(
-				'invalid response from google while searching "%s":\n%s'
-				% (search_text, response))
+		if not 'responseStatus' in json:
+			response.error = 'no response status while searching "%s":\n%s' \
+				% (search_text, response)
+			response.retryableError = False
+			return response
+
+		if 'responseStatus' in json and \
+		   json['responseStatus'] != 200:
+			if json['responseStatus'] == 400:
+				# "out of range start"
+				# Exhausted=true
+				response.exhausted = True
+				response.error = "No more images found"
+				response.retryableError = False
+				return response
+			elif json['responseStatus'] == 503:
+				# Retryable.
+				response.error = 'Received responseStatus %d while searching "%s":\n%s' \
+					% (json['responseStatus'], search_text, json['responseDetails'])
+				response.retryableError = True
+				return response
+
+		if 'results' not in json['responseData']:
+			response.error = 'invalid response from google while searching "%s":\n%s' \
+				% (search_text, response)
+			response.retryableError = False
+			return response
 
 		from Image import Image
 		images = []
@@ -53,11 +73,12 @@ class Google(object):
 			except Exception, e:
 				# Don't fail completely when deserializing single images
 				pass
-		return images
+		response.images = images
+		return response
 
 if __name__ == '__main__':
-	images = Google.searchImages("butterfly", 0)
-	for image in images:
+	response = Google.searchImages("butterfly", 0)
+	for image in response.images:
 		print image.toJSON()
 	from FS import FS
-	FS.saveImagesToFile(images, 'butterfly', len(images))
+	FS.saveSummaryOfImages(response.images, 'butterfly', response.exhausted, len(response.images))

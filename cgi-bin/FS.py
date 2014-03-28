@@ -30,10 +30,13 @@ class FS(object):
 		from os import path
 		directory = FS.getImageDir(search_term)
 
+		from ImageResponse import ImageResponse		
+		response = ImageResponse()
+
 		allFilePath = path.join(directory, "all.json")
 		if not path.exists(allFilePath):
 			# Search term hasn't had any results yet
-			return []
+			return response # return empty response
 
 		allContents = FS.getAllJSON(allFilePath)
 		jsonFiles      = allContents.get('jsonFiles', [])
@@ -43,14 +46,19 @@ class FS(object):
 		# Check if there are more images requested than we have
 		if start_index + FS.BATCH_SIZE >= len(jsonFiles) and exhausted:
 			# Raise exception if we should not fetch more images
-			raise Exception('No more images to fetch; search exhausted')
+			response.exhausted = True
+			response.error = "No more images found"
+			response.retryableError = False
+			return response
 
 		images = []
 		for jsonFile in jsonFiles[start_index:start_index + FS.BATCH_SIZE]:
 			jsonFilePath = path.join(directory, jsonFile)
 			images.append(FS.getImageFromFile(jsonFilePath))
 
-		return images
+		response.images = images
+		response.exhausted = exhausted
+		return response
 
 	@staticmethod
 	def getAllJSON(allFilePath):
@@ -74,7 +82,19 @@ class FS(object):
 		return Image(json=jsonImage)
 
 	@staticmethod
-	def saveImagesToFile(images, directory, next_image_index):
+	def saveSummaryOfImages(images, directory, exhausted, next_image_index):
+		'''
+			Saves a summary of the images to the "all.json" file
+			located in the given directory.
+
+			Sample:
+			directory/all.json:
+			{
+				"jsonFiles" : ["1.json", "2.json"],
+				"exhausted" : true,
+				"nextImageIndex" : 40,
+			}
+		'''
 		from json import loads, dumps
 		from os import path, mkdir
 
@@ -95,8 +115,6 @@ class FS(object):
 			}
 
 		for image in images:
-			# Save image info to filesystem in separate file
-			FS.saveImageToFile(image, directory)
 			# Add image to list of all images
 			allJson['jsonFiles'].append("%d.json" % image.imageIndex)
 		allJson['nextImageIndex'] = next_image_index
@@ -121,6 +139,6 @@ if __name__ == '__main__':
 	image = FS.getImageFromFile('butterflies/1.json')
 	print image.toJSON()
 	'''
-	images = FS.getStoredImages('butterflies', 0)
-	for image in images:
+	response = FS.getStoredImages('butterflies', 0)
+	for image in response.images:
 		print image.toJSON()

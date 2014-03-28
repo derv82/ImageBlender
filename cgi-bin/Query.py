@@ -7,25 +7,36 @@ class Query(object):
 		from os import environ
 		ipAddress = environ.get('REMOTE_ADDR', '127.0.0.1')
 
+		from ImageResponse import ImageResponse
 		from FS import FS
 		# Load images from disk if we've already retrieved them
-		images = FS.getStoredImages(search_term, search_index)
-		if len(images) > 0:
+		response = FS.getStoredImages(search_term, search_index)
+		if len(response.images) > 0:
 			# Return 'em if we got 'em
-			return images
+			return response
 
 		# Fetch new images
 		from Google import Google
-		images = Google.searchImages(search_term,
+		response = Google.searchImages(search_term,
 		                             search_index, 
 		                             source_ip = ipAddress,
 		                             safe = "off")
 
-		FS.saveImagesToFile(images, 
-			                FS.getImageDir(search_term),
+		if response.error != None:
+			# No error
+			return response
+
+		directory = FS.getImageDir(search_term)
+		FS.saveSummaryOfImages(response.images, 
+			                directory,
+			                response.exhausted,
 			                search_index + FS.BATCH_SIZE)
 
-		return images
+		for image in response.images:
+			# Save image info to filesystem in separate file
+			FS.saveImageToFile(image, directory)
+
+		return response
 
 
 if __name__ == '__main__':

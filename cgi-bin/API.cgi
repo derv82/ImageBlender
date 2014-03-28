@@ -34,10 +34,18 @@ class API(object):
 			raise Exception('search_index is not numeric: %s' % search_index)
 		search_index = int(search_index)
 
+		from ImageResponse import ImageResponse
 		from Query import Query
-		images = Query.getMoreImages(search_term, search_index)
+		response = Query.getMoreImages(search_term, search_index)
 
-		return images
+		result = {
+			'images'    : response.images,
+			'exhausted' : response.exhausted
+		}
+		if response.error != None:
+			result['error'] = response.error
+			result['retryableError'] = response.retryableError
+		return result
 
 	@staticmethod
 	def getKeys():
@@ -63,21 +71,17 @@ class API(object):
 		return cookies
 
 class ImageEncoder(JSONEncoder):
-    def default(self, obj):
-    	if isinstance(obj, Image):
-            return obj.toDict()
-
-        return json.JSONEncoder.default(self, obj)
+	def default(self, obj):
+		if isinstance(obj, Image):
+			return obj.toDict()
+		return json.JSONEncoder.default(self, obj)
 
 if __name__ == '__main__':
 	print 'Content-Type: application/json'
 	print ''
 
 	try:
-		images = API.main()
-		response = {
-			'images' : images
-		}
+		response = API.main()
 		print dumps(response, indent=2, cls=ImageEncoder)
 	except Exception, e:
 		response = {

@@ -71,6 +71,10 @@ function init() {
 			OPACITY = ev.value;
 			redraw();
 		});
+	$('.close')
+		.click(function() {
+			$('.message').hide()
+		});
 }
 
 /*
@@ -147,13 +151,17 @@ function searchImages(searchTerm) {
 			$('#searchButton').removeClass('active');
 			if ('error' in json) {
 				if ('trace' in json) {
-					console.log(json.trace);
+					displayError(json.error, json.trace);
 				}
-				throw new Error('Error: ' + json.error);
+				else {
+					displayError(json.error);
+				}
 			}
+			
 			if (!('images' in json)) {
-				throw new Error('"images" not returned by API');
+				displayError('No images found.');
 			}
+
 			// Iterate over images and add them.
 			for (var arrIndex = 0;
 				     arrIndex < json.images.length;
@@ -164,10 +172,29 @@ function searchImages(searchTerm) {
 			//$('#searchButton').text('Get More Images');
 			$('#thumbnailCount').text("(" + getVisibleImageCount() + "/" + $IMAGES.length + ")");
 		})
-		.fail(function() {
-			$('#searchButton').removeClass('active');
-			console.log('Failure to complete request to /cgi-bin/API.cgi');
+		.fail(function(jqHXR, statusText, errorThrown) {
+			displayError('textStatus: ' + textStatus, 'responseText: ' + jqXHR.responseText);
 		});
+}
+
+function displayError(title, stackTrace) {
+	$('#searchButton').removeClass('active');
+	
+	$('#errorTitle').html(title);
+	if (stackTrace !== undefined) {
+		var htmlTrace = $('<div/>').text(stackTrace).html();
+		$("#errorBody")
+			.html(htmlTrace)
+			.fadeIn(1000);
+	}
+	else {
+		$('errorBody').hide();
+	}
+	$('.message')
+		.hide()
+		.slideDown();
+	
+	throw new Error( title + "\n" + ((stackTrace) ? stackTrace : "") );
 }
 
 function redraw() {
