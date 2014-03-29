@@ -2,6 +2,10 @@ h1 {
 	text-shadow: 1px 3px 5px rgba(0, 0, 0, 0.5);
 }
 
+.page {
+	display: none;
+}
+
 .jumbotron {
 	padding-bottom: 0px !important;
 }
@@ -33,8 +37,11 @@ canvas {
 .panel-heading {
 	font-size: 1.2em !important;
 }
+.panel-heading {
+	font-weight: bold;
+}
 .panel-heading a {
-	color: #000;
+	color: #fff;
 }
 .panel-heading a:after {
 	font-family: 'Glyphicons Halflings';
@@ -43,6 +50,9 @@ canvas {
 }
 .panel-heading a.collapsed:after {
 	content: "\e080";
+}
+a:active,a:hover,a:focus {
+	color: #fff !important;
 }
 
 @keyframes anim-rotate {
@@ -73,9 +83,11 @@ canvas {
 	max-width: 50px;
 }
 
+#imageOpacity: {
+	visibility: hidden;
+}
 #sliderObject {
-	width: 100%;
-	height: 100%;
+	margin-left: 5px;
 }
 
 .message {

@@ -7,7 +7,7 @@ class FS(object):
 	BATCH_SIZE = 4
 
 	@staticmethod
-	def getImageDir(search_term):
+	def getImageDir(search_term=''):
 		from os import path, mkdir
 		directory = path.join('..', 'images', search_term)
 		if not path.exists(directory):
@@ -84,13 +84,13 @@ class FS(object):
 	@staticmethod
 	def saveSummaryOfImages(images, directory, exhausted, next_image_index):
 		'''
-			Saves a summary of the images to the "all.json" file
+			Appends to the summary of the images to the "all.json" file
 			located in the given directory.
 
 			Sample:
 			directory/all.json:
 			{
-				"jsonFiles" : ["1.json", "2.json"],
+				"jsonFiles" : ["<imgid>.json", "<imgid>.json"],
 				"exhausted" : true,
 				"nextImageIndex" : 40,
 			}
@@ -116,23 +116,62 @@ class FS(object):
 
 		for image in images:
 			# Add image to list of all images
-			allJson['jsonFiles'].append("%d.json" % image.imageIndex)
+			allJson['jsonFiles'].append("%d.json" % image.imageID)
 		allJson['nextImageIndex'] = next_image_index
 
 		# Persist to filesystem
 		f = open(allJsonPath, 'w')
 		f.write(dumps(allJson, indent=2))
-		f.flush()
 		f.close()
 
 	@staticmethod
 	def saveImageToFile(image, directory):
 		from os import path
-		save_path = path.join(directory, '%d.json' % image.imageIndex)
+		save_path = path.join(directory, '%d.json' % image.imageID)
 		f = open(save_path, 'w')
 		f.write(image.toJSON())
-		f.flush()
 		f.close()
+
+	@staticmethod
+	def recordSearchTerm(term):
+		from os import path
+		from json import loads, dumps
+		terms_path = path.join(FS.getImageDir(), 'all.json')
+		if path.exists(terms_path):
+			f = open(terms_path, 'r')
+			jsonText = f.read()
+			f.close()
+
+			result = loads(jsonText)
+			if term.lower().strip() not in result['terms']:
+				result['terms'].append(term.lower().strip())
+		else:
+			result = {
+				'terms' : [term]
+			}
+
+		f = open(terms_path, 'w')
+		f.write(dumps(result, indent=2))
+		f.close()
+
+	@staticmethod
+	def getSearchTerms(start, count):
+		from os import path
+		terms_path = path.join(FS.getImageDir(), 'all.json')
+		if path.exists(terms_path):
+			f = open(terms_path, 'r')
+			jsonText = f.read()
+			f.close()
+
+			from json import loads
+			result = loads(jsonText)
+			count = min(len(result['terms']), count)
+			result['terms'] = result['terms'][start:count]
+		else:
+			result = {
+				'terms' : []
+			}
+		return result
 
 if __name__ == '__main__':
 	'''

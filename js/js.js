@@ -10,9 +10,14 @@ $(document).ready(function() {
 function getCanvas()  { return $('#mainCanvas') }
 
 function init() {
+	// Setup button/text event handlers
 	$('#searchTerm')
-		.change(function(changeEvent) {
+		.on('input', function(changeEvent) {
 			$(this).data('search_index', 0);
+			$IMAGES = new Array();
+			$('#thumbTable').empty();
+			redraw();
+			$('#thumbnailCount').text("(" + getVisibleImageCount() + "/" + $IMAGES.length + ")");
 		})
 		.keypress(function(kpe) {
 			if (kpe.keyCode === 13) {
@@ -22,8 +27,11 @@ function init() {
 	$('#searchButton').click(function() {
 		searchImages( $('#searchTerm').val() );
 	})
-	.click();
+	.click(); // Load images
 
+	getSearchTerms();
+
+	// Setup HTML5 canvas
 	var $canvas = getCanvas();
 	CONTEXT = $canvas[0].getContext('2d');
 
@@ -37,8 +45,8 @@ function init() {
 		redraw();
 		$('#sliderObject').width('100%');
 	});
-	$(window).resize();
-
+	
+	// Setup colorpicker
 	$('.colorPicker')
 		.colorpicker({
 			'format' : 'rgba',
@@ -52,6 +60,7 @@ function init() {
 			 + rgba.b + ", "
 			 + rgba.a + ")";
 			getCanvas().css('background-color', color);
+			$('html,body').css('background-color', color);
 		});
 	$('#imageColor').val('rgba(255, 255, 255, 1)');
 
@@ -64,17 +73,55 @@ function init() {
 			selection: 'none',
 			tooltip: 'show',
 			formater: function(input) {
-				return input.toFixed(2);
+				return (input.toFixed(2) * 100) + '%';
 			}
 		})
 		.on('slide', function(ev) {
 			OPACITY = ev.value;
 			redraw();
 		});
+
+	// Alert message close button
 	$('.close')
 		.click(function() {
 			$('.message').hide()
 		});
+
+	// Setup navigation
+	pageChanged();
+	$(window).bind('popstate', function(e) {
+		pageChanged();
+		e.stopPropagation();
+	});
+}
+
+/* Triggers a page load */
+function pageChanged() {
+	$('a:focus').blur();
+	$('.nav li').removeClass('active');
+	$('.page')
+		.slideUp(200)
+		.fadeOut(200);
+
+	var keys = getQueryHashKeys(),
+	    pageID = 'home';
+
+	if ('gallery' in keys) {
+		pageID = 'gallery';
+		$('#searchInputs').hide();
+	} else {
+		pageID = 'home';
+		$('#searchInputs').show();
+	}
+
+	$('#' + pageID + 'Container')
+		.stop()
+		.hide()
+		.slideDown(500)
+		.fadeIn(500);
+	$('#' + pageID + 'Nav')
+		.addClass('active');
+	$(window).resize();
 }
 
 /*
@@ -112,7 +159,8 @@ function addImage(image) {
 
 	$img
 		.addClass('active')
-		.attr('src', image.localPath ? localPath : image.unescapedUrl)
+		.attr('id', image.imageId)
+		.attr('src', image.localPath ? image.localPath : image.unescapedUrl)
 		.load(function() {
 			CONTEXT.globalAlpha = OPACITY;
 			try {
@@ -127,11 +175,52 @@ function addImage(image) {
 				console.log('Image not ready: '+ $(this).src
 					+ '\nImage object: ', $(this), error);
 			}
-		});
+		})
+		.appendTo('body')
+		.hide();
+
+	if (!image.localPath) {
+		downloadImage(image);
+	}
 
 	$IMAGES.push($img);
 
 	updateGlobalOpacity();
+}
+
+function downloadImage(image) {
+	// Tell the server to download this image
+	var apiArgs = {
+		'method' : 'downloadImage',
+		'searchTerm' : $('#searchTerm').val(),
+		'url' : image.unescapedUrl,
+		'imageID' : image.imageId,
+		'imageIndex' : image.imageIndex,
+	};
+	$.getJSON('./cgi-bin/API.cgi', apiArgs)
+		.done(function(json) {
+			if ('error' in json) {
+				if ('trace' in json) {
+					displayError(json.error, json.trace);
+				}
+				else {
+					displayError(json.error);
+				}
+			}
+			/*
+			'json' response looks like:
+			{
+				url: <path to local image>,
+			}
+			*/
+			// replace existing <img> src with json.url
+			$('#' + json.imageID)
+				.attr('src', '')
+				.attr('src', json.url);
+		})
+		.fail(function(jqXHR, statusText, errorThrown) {
+			displayError('statusText: ' + statusText, 'responseText: ' + jqXHR.responseText);
+		});
 }
 
 function searchImages(searchTerm) {
@@ -172,8 +261,8 @@ function searchImages(searchTerm) {
 			//$('#searchButton').text('Get More Images');
 			$('#thumbnailCount').text("(" + getVisibleImageCount() + "/" + $IMAGES.length + ")");
 		})
-		.fail(function(jqHXR, statusText, errorThrown) {
-			displayError('textStatus: ' + textStatus, 'responseText: ' + jqXHR.responseText);
+		.fail(function(jqXHR, statusText, errorThrown) {
+			displayError('statusText: ' + statusText, 'responseText: ' + jqXHR.responseText);
 		});
 }
 
@@ -194,7 +283,82 @@ function displayError(title, stackTrace) {
 		.hide()
 		.slideDown();
 	
-	throw new Error( title + "\n" + ((stackTrace) ? stackTrace : "") );
+	//throw new Error( title + "\n" + ((stackTrace) ? stackTrace : "") );
+}
+
+function getSearchTerms(start, count) {
+	if (start === undefined) { start =  0; }
+	if (count === undefined) { count = 20; }
+
+	var apiArgs = {
+		'start'  : start,
+		'count'  : count,
+		'method' : 'getSearchTerms'
+	};
+
+	$.getJSON('./cgi-bin/API.cgi', apiArgs)
+		.done(function(json) {
+			if ('error' in json) {
+				if ('trace' in json) {
+					displayError(json.error, json.trace);
+				}
+				else {
+					displayError(json.error);
+				}
+			}
+
+			if (!('terms' in json)) {
+				displayError('No terms found.');
+			}
+
+			// Iterate over images and add them.
+			for (var arrIndex = 0;
+				     arrIndex < json.terms.length;
+				     arrIndex++) {
+				$('<div/>')
+					.addClass('col-xs-12')
+					.html(json.terms[arrIndex])
+					.appendTo('#termsDiv');
+			}
+		})
+		.fail(function(jqXHR, statusText, errorThrown) {
+			displayError('statusText: ' + statusText, 'responseText: ' + jqXHR.responseText);
+		});
+}
+
+function saveImage() {
+	$.ajax({
+		type: "POST",
+		url: "script.php",
+		data: { 
+			'method' : 'saveImage',
+			'searchTerm' : $('#searchTerm').val(),
+			'visibleImageCount' : getVisibleImageCount(),
+			'extension' : 'png',
+			'base64' : getCanvas().toDataURL('image/jpeg', 0.95)
+		}
+	})
+	.done(function(json) {
+		// TODO show saved image link, redirect?
+		displayError(JSON.stringify(json));
+	})
+	.fail(function(jqXHR, statusText, errorThrown) {
+		displayError('statusText: ' + statusText, 'responseText: ' + jqXHR.responseText);
+	});
+}
+
+function getQueryHashKeys() {
+	var a = window.location.hash.substring(1).split('&');
+	if (a == "") return {};
+	var b = {};
+	for (var i = 0; i < a.length; ++i) {
+		var keyvalue = a[i].split('=');
+		var key = keyvalue[0];
+		keyvalue.shift(); // Remove first element (key)
+		var value = keyvalue.join('='); // Remaining elements are the value
+		b[key] = decodeURIComponent(value); //.replace(/\+/g, " "));
+	}
+	return b;
 }
 
 function redraw() {

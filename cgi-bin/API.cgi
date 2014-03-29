@@ -2,10 +2,11 @@
 
 from cgi   import FieldStorage
 from cgitb import enable as cgi_enable; cgi_enable()
-from os    import environ
+from os    import environ, remove, path
 from json  import dumps, JSONEncoder
 from traceback import format_exc
 from Image import Image
+from FS import FS
 
 class API(object):
 	@staticmethod
@@ -16,11 +17,21 @@ class API(object):
 			raise Exception('required "method" not found in keys')
 
 		method = keys.get('method')
+
 		if method == 'getImages':
 			return API.getImages(keys)
+
 		elif method == 'getSearchTerms':
-			pass
-		return None
+			return API.getSearchTerms(keys)
+
+		elif method == 'saveBlendedImage':
+			return API.saveBlendedImage(keys)
+
+		elif method == 'downloadImage':
+			return API.downloadImage(keys)
+
+		raise Exception('method not found: %s' % method)
+
 
 	@staticmethod
 	def getImages(keys):
@@ -29,6 +40,8 @@ class API(object):
 			raise Exception('required "search_term" and "search_index" not provided')
 		
 		search_term  = keys.get('search_term')
+		search_term = API.sanitizeTerm(search_term)
+
 		search_index = keys.get('search_index')
 		if not search_index.isdigit():
 			raise Exception('search_index is not numeric: %s' % search_index)
@@ -48,6 +61,82 @@ class API(object):
 		return result
 
 	@staticmethod
+	def getSearchTerms(keys):
+		start = int(keys.get('start', '0'))
+		count = int(keys.get('count', '0'))
+		return FS.getSearchTerms(start=start, count=count)
+
+	@staticmethod
+	def downloadImage(keys):
+		if 'url'        not in keys: raise Exception('url required')
+		if 'searchTerm' not in keys: raise Exception('searchTerm required')
+		if 'imageID'    not in keys: raise Exception('imageID required')
+		if 'imageIndex' not in keys: raise Exception('imageIndex required')
+
+		url = keys.get('url')
+		searchTerm  = API.sanitizeTerm(keys.get('searchTerm'))
+		sanitizedSearchTerm = API.sanitizeTerm(searchTerm)
+		imageID = keys.get('imageID')
+		imageIndex = keys.get('imageIndex')
+		
+		import re
+		m = re.search('\\.(jpg|jpeg|png|gif|JPG|JPEG|PNG|GIF)', url)
+		if m == None:
+			raise Exception('image does not contain an image extension')
+		saveAsName = '%s.%s' % (imageID, m.group(1))
+		saveAsDir  = FS.getImageDir(search_term=searchTerm)
+		saveAsFile = path.join(saveAsDir, saveAsName)
+
+		from Httpy import Httpy
+		httpy = Httpy()
+		try:
+			success = httpy.download(url, saveAsFile, timeout=10, raise_exception=True)
+			if not success:
+				remove(saveAsFile) # Delete file
+				raise Exception('Failed to download file.')
+		except Exception, e:
+			if path.exists(saveAsFile):
+				remove(saveAsFile)
+			raise e
+
+		localImagePath = path.join('images', searchTerm, saveAsName)
+		jsonImageFile = path.join(saveAsDir, '%s.json' % imageIndex)
+		# Save new image path to json file
+		f = open(jsonImageFile, 'r')
+		jsonText = f.read()
+		f.close()
+
+		from json import loads, dumps
+		json = loads(jsonText)
+		json['localPath'] = localImagePath
+
+		f = open(jsonImageFile, 'w')
+		f.write(dumps(json, indent=2))
+		f.close()
+
+		return {
+			'url' : localImagePath,
+			'imageID' : imageID
+		}
+
+	@staticmethod
+	def saveBlendedImage(keys):
+		searchTerm = sanitizeTerm(keys.get('searchTerm'))
+		imageCount = keys.get('getVisibleImageCount')
+		base64 = keys.get('base64')
+		extension = keys.get('extension')
+
+		import time
+		timestamp = int(time.time())
+
+		savePath = 'blends/%s-%d.%s' \
+				% (searchTerm, timestamp, extension)
+		
+		return {
+			'savePath' : savePath
+		}
+
+	@staticmethod
 	def getKeys():
 		''' Get dict of keys/values passed in query string '''
 		from urllib import unquote
@@ -57,6 +146,13 @@ class API(object):
 			if form[key].value != 'undefined':
 				keys[key] = unquote(form[key].value)
 		return keys
+
+	@staticmethod
+	def sanitizeTerm(term):
+		valid_chars = ' -.,"\'abcdefghijklmnopqrstuvwxyz1234567890'
+		sanitized = ''.join(c for c in term if c.lower() in valid_chars)
+		sanitized = sanitized.replace(' ', '%20')
+		return sanitized
 
 	@staticmethod
 	def get_cookies():
