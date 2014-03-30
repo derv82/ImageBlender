@@ -87,7 +87,7 @@ class Httpy:
 			return False
 		return True
 
-	def get_meta(self, url, raise_exception=False, timeout=DEFAULT_TIMEOUT):
+	def get_meta(self, url, timeout=DEFAULT_TIMEOUT, raise_exception=False):
 		""" 
 			Returns a dict containing info about the URL.
 			Such as Content-Type, Content-Length, etc.

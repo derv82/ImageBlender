@@ -28,6 +28,10 @@ function init() {
 		searchImages( $('#searchTerm').val() );
 	})
 	.click(); // Load images
+	$('#saveButton')
+		.click(function() {
+			saveImage();
+		});
 
 	getSearchTerms();
 
@@ -161,15 +165,22 @@ function addImage(image) {
 		.addClass('active')
 		.attr('id', image.imageId)
 		.attr('src', image.localPath ? image.localPath : image.unescapedUrl)
+		.data('isLocalImage', !!image.localPath)
+		.error(function() {
+			console.log('Image load error on ', image);
+			$(this).removeClass('active');
+			$thubm.removeClass('active');
+			//$thumb.parent().remove();
+			//$(this).remove();
+		})
 		.load(function() {
 			CONTEXT.globalAlpha = OPACITY;
 			try {
-				var $canvas = getCanvas();
 				CONTEXT.drawImage(
 					this,
 					0, 0, // top, left
-					$canvas.width(),
-					$canvas.height()
+					getCanvas().width(),
+					getCanvas().height()
 				);
 			} catch (error) {
 				console.log('Image not ready: '+ $(this).src
@@ -193,20 +204,16 @@ function downloadImage(image) {
 	var apiArgs = {
 		'method' : 'downloadImage',
 		'searchTerm' : $('#searchTerm').val(),
-		'url' : image.unescapedUrl,
+		'url' : encodeURIComponent(image.unescapedUrl),
 		'imageID' : image.imageId,
 		'imageIndex' : image.imageIndex,
 	};
 	$.getJSON('./cgi-bin/API.cgi', apiArgs)
 		.done(function(json) {
 			if ('error' in json) {
-				if ('trace' in json) {
-					displayError(json.error, json.trace);
-				}
-				else {
-					displayError(json.error);
-				}
+				return;
 			}
+			//handleError(json);
 			/*
 			'json' response looks like:
 			{
@@ -216,7 +223,8 @@ function downloadImage(image) {
 			// replace existing <img> src with json.url
 			$('#' + json.imageID)
 				.attr('src', '')
-				.attr('src', json.url);
+				.attr('src', json.url)
+				.data('isLocalImage', true);
 		})
 		.fail(function(jqXHR, statusText, errorThrown) {
 			displayError('statusText: ' + statusText, 'responseText: ' + jqXHR.responseText);
@@ -238,15 +246,8 @@ function searchImages(searchTerm) {
 	$.getJSON('./cgi-bin/API.cgi', apiArgs)
 		.done(function(json) {
 			$('#searchButton').removeClass('active');
-			if ('error' in json) {
-				if ('trace' in json) {
-					displayError(json.error, json.trace);
-				}
-				else {
-					displayError(json.error);
-				}
-			}
-			
+			handleError(json);
+
 			if (!('images' in json)) {
 				displayError('No images found.');
 			}
@@ -266,6 +267,17 @@ function searchImages(searchTerm) {
 		});
 }
 
+function handleError(json) {
+	if ('error' in json) {
+		if ('trace' in json) {
+			displayError(json.error, json.trace);
+		}
+		else {
+			displayError(json.error);
+		}
+	}
+}
+
 function displayError(title, stackTrace) {
 	$('#searchButton').removeClass('active');
 	
@@ -282,8 +294,7 @@ function displayError(title, stackTrace) {
 	$('.message')
 		.hide()
 		.slideDown();
-	
-	//throw new Error( title + "\n" + ((stackTrace) ? stackTrace : "") );
+	throw new Error( title + "\n" + ((stackTrace) ? stackTrace : "") );
 }
 
 function getSearchTerms(start, count) {
@@ -298,14 +309,7 @@ function getSearchTerms(start, count) {
 
 	$.getJSON('./cgi-bin/API.cgi', apiArgs)
 		.done(function(json) {
-			if ('error' in json) {
-				if ('trace' in json) {
-					displayError(json.error, json.trace);
-				}
-				else {
-					displayError(json.error);
-				}
-			}
+			handleError(json);
 
 			if (!('terms' in json)) {
 				displayError('No terms found.');
@@ -327,23 +331,41 @@ function getSearchTerms(start, count) {
 }
 
 function saveImage() {
+	$('#saveButton').addClass('active');
+	var imageData = null;
+	try {
+		imageData = getCanvas()[0].toDataURL('image/jpeg', 0.95);
+	} catch (err) {
+		if (err.code != 18) {
+			$('#saveButton').removeClass('active');
+			displayError('Failed to get canvas data:', err);
+		}
+		console.log('Redrawing canvas');
+		redraw(true);
+		imageData = getCanvas()[0].toDataURL('image/jpeg', 0.95);
+	}
 	$.ajax({
 		type: "POST",
-		url: "script.php",
+		url: "./cgi-bin/API.cgi",
 		data: { 
-			'method' : 'saveImage',
+			'method' : 'saveBlendedImage',
 			'searchTerm' : $('#searchTerm').val(),
 			'visibleImageCount' : getVisibleImageCount(),
-			'extension' : 'png',
-			'base64' : getCanvas().toDataURL('image/jpeg', 0.95)
+			'extension' : 'jpg',
+			'imageData' : imageData
 		}
 	})
 	.done(function(json) {
-		// TODO show saved image link, redirect?
-		displayError(JSON.stringify(json));
+		$('#saveButton').removeClass('active');
+		handleError(json);
+		// Show saved image
+		var imgUrl = document.location.pathname
+		           + json.savePath;
+		window.open(imgUrl);
+		// Show 'share' button
 	})
 	.fail(function(jqXHR, statusText, errorThrown) {
-		displayError('statusText: ' + statusText, 'responseText: ' + jqXHR.responseText);
+		displayError('statusText: ' + statusText, 'errorThrown' + errorThrown + '\n\nresponseText: ' + jqXHR.responseText);
 	});
 }
 
@@ -361,11 +383,27 @@ function getQueryHashKeys() {
 	return b;
 }
 
-function redraw() {
+function redraw(reloadWithLocalPathsOnly) {
 	var $canvas = getCanvas();
+	if (reloadWithLocalPathsOnly) {
+		var $newCanvas = $('<canvas/>')
+			.attr('id', 'mainCanvas')
+			.addClass('thumbnail');
+		$canvas.replaceWith($newCanvas);
+		$(window).resize();
+		$canvas = $newCanvas;
+		CONTEXT = $canvas[0].getContext('2d');
+	}
 	CONTEXT.clearRect(0, 0, $canvas.width(), $canvas.height());
 	for (var i = 0; i < $IMAGES.length; i++) {
 		if ($IMAGES[i].hasClass('active')) {
+			if (
+			     reloadWithLocalPathsOnly
+			     && !($IMAGES[i].data('isLocalImage'))
+			  ) {
+			  	console.log('Skipping', $IMAGES[i].attr('src'));
+				continue;
+			}
 			$IMAGES[i].load();
 		}
 	}

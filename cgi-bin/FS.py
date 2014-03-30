@@ -116,7 +116,7 @@ class FS(object):
 
 		for image in images:
 			# Add image to list of all images
-			allJson['jsonFiles'].append("%d.json" % image.imageID)
+			allJson['jsonFiles'].append("%s.json" % image.imageID)
 		allJson['nextImageIndex'] = next_image_index
 
 		# Persist to filesystem
@@ -127,7 +127,7 @@ class FS(object):
 	@staticmethod
 	def saveImageToFile(image, directory):
 		from os import path
-		save_path = path.join(directory, '%d.json' % image.imageID)
+		save_path = path.join(directory, '%s.json' % image.imageID)
 		f = open(save_path, 'w')
 		f.write(image.toJSON())
 		f.close()

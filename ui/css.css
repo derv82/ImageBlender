@@ -2,6 +2,28 @@ h1 {
 	text-shadow: 1px 3px 5px rgba(0, 0, 0, 0.5);
 }
 
+.navbar {
+	min-height: 30px !important;
+}
+.navbar-brand {
+	padding: 5px !important;
+	margin-left: 20px;
+	margin-right: 10px;
+	height: 30px !important;
+}
+.nav > li > a {
+	padding: 5px !important;
+	padding-left: 10px !important;
+	padding-right: 10px !important;
+}
+.navbar-toggle {
+	margin-top: 5px !important;
+	margin-bottom: 0px !important;
+	padding-top: 0px !important;
+	padding-bottom: 0px !important;
+	font-size: 10px;
+}
+
 .page {
 	display: none;
 }
@@ -81,6 +103,10 @@ a:active,a:hover,a:focus {
     animation: anim-rotate 2s infinite linear;
 	opacity: 1;
 	max-width: 50px;
+}
+
+#blendedImageDiv {
+	position: relative;
 }
 
 #imageOpacity: {

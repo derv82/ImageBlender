@@ -74,7 +74,7 @@ class API(object):
 		if 'imageIndex' not in keys: raise Exception('imageIndex required')
 
 		url = keys.get('url')
-		searchTerm  = API.sanitizeTerm(keys.get('searchTerm'))
+		searchTerm  = keys.get('searchTerm')
 		sanitizedSearchTerm = API.sanitizeTerm(searchTerm)
 		imageID = keys.get('imageID')
 		imageIndex = keys.get('imageIndex')
@@ -90,6 +90,10 @@ class API(object):
 		from Httpy import Httpy
 		httpy = Httpy()
 		try:
+			metadata = httpy.get_meta(url, timeout=2, raise_exception=True)
+			if 'Content-Type' not in metadata or 'image' not in metadata['Content-Type']:
+				raise Exception('Image at %s is not an image: %s' \
+					% (url, metadata.get('Content-Type', 'none')))
 			success = httpy.download(url, saveAsFile, timeout=10, raise_exception=True)
 			if not success:
 				remove(saveAsFile) # Delete file
@@ -100,7 +104,7 @@ class API(object):
 			raise e
 
 		localImagePath = path.join('images', searchTerm, saveAsName)
-		jsonImageFile = path.join(saveAsDir, '%s.json' % imageIndex)
+		jsonImageFile = path.join(saveAsDir, '%s.json' % imageID)
 		# Save new image path to json file
 		f = open(jsonImageFile, 'r')
 		jsonText = f.read()
@@ -121,9 +125,9 @@ class API(object):
 
 	@staticmethod
 	def saveBlendedImage(keys):
-		searchTerm = sanitizeTerm(keys.get('searchTerm'))
+		searchTerm = API.sanitizeTerm(keys.get('searchTerm'))
 		imageCount = keys.get('getVisibleImageCount')
-		base64 = keys.get('base64')
+		imageData = keys.get('imageData')
 		extension = keys.get('extension')
 
 		import time
@@ -132,6 +136,24 @@ class API(object):
 		savePath = 'blends/%s-%d.%s' \
 				% (searchTerm, timestamp, extension)
 		
+		import re
+		m = re.search('data:.*,.*', imageData)
+		if m == None:
+			raise Exception('imageData must be in format data:image/<type>,<base64>, got: ' + imageData)
+
+		# Borrowed from http://stackoverflow.com/questions/19579078/kineticjs-todataurl-gives-incorrect-padding-error-in-python
+		params,data = imageData.split(',')
+		params = params.split(';')
+		if 'base64' in params:
+			data = data.decode('base64')
+		for param in params:
+			if param.startswith('charset='):
+				data = unquote(data).decode(param.split('=', 1)[-1])
+
+		f = open(path.join('..', savePath), 'w')
+		f.write(data)
+		f.close()
+
 		return {
 			'savePath' : savePath
 		}
