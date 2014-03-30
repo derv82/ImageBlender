@@ -169,7 +169,7 @@ function addImage(image) {
 		.error(function() {
 			console.log('Image load error on ', image);
 			$(this).removeClass('active');
-			$thubm.removeClass('active');
+			$thumb.removeClass('active');
 			//$thumb.parent().remove();
 			//$(this).remove();
 		})
