@@ -164,7 +164,7 @@ function addImage(image) {
 	$img
 		.addClass('active')
 		.attr('id', image.imageId)
-		.attr('src', image.localPath ? image.localPath : image.unescapedUrl)
+		//.attr('src', image.localPath ? image.localPath : image.unescapedUrl)
 		.data('isLocalImage', !!image.localPath)
 		.error(function() {
 			console.log('Image load error on ', image);
@@ -186,12 +186,15 @@ function addImage(image) {
 				console.log('Image not ready: '+ $(this).src
 					+ '\nImage object: ', $(this), error);
 			}
+			setDynamicBGColor();
 		})
 		.appendTo('body')
 		.hide();
 
 	if (!image.localPath) {
 		downloadImage(image);
+	} else {
+		$img.attr('src', image.localPath);
 	}
 
 	$IMAGES.push($img);
@@ -214,12 +217,6 @@ function downloadImage(image) {
 				return;
 			}
 			//handleError(json);
-			/*
-			'json' response looks like:
-			{
-				url: <path to local image>,
-			}
-			*/
 			// replace existing <img> src with json.url
 			$('#' + json.imageID)
 				.attr('src', '')
@@ -407,6 +404,40 @@ function redraw(reloadWithLocalPathsOnly) {
 			$IMAGES[i].load();
 		}
 	}
+
+	setDynamicBGColor();
+}
+
+function setDynamicBGColor() {
+	var $canvas = getCanvas(),
+	    x, y, data,
+	    r = 0, g = 0, b = 0,
+	    width = $canvas.width(), height = $canvas.height(),
+	    xstep = width / 10, ystep = height / 10;
+	var counter = 0;
+	for (x = 0; x < width; x += xstep) {
+		for (y = 0; y < height; y += ystep) {
+			counter++;
+			data = CONTEXT.getImageData(x, y, 1, 1).data;
+			r += data[0];
+			g += data[1];
+			b += data[2];
+		}
+	}
+	r /= counter;
+	g /= counter;
+	b /= counter;
+	r = Math.ceil(r);
+	g = Math.ceil(g);
+	b = Math.ceil(b);
+	var hex = rgbToHex(r, g, b);
+	$('.colorPicker').colorpicker('setValue', hex);
+}
+
+function rgbToHex(red, green, blue) {
+	return '#' + red.toString(16) +
+			green.toString(16) +
+			blue.toString(16);
 }
 
 function getVisibleImageCount() {
@@ -421,7 +452,7 @@ function getVisibleImageCount() {
 
 function updateGlobalOpacity() {
 	var visibleImages = Math.max(getVisibleImageCount(), 1);
-	OPACITY = 1.0 / visibleImages;
+	OPACITY = 1.1 / visibleImages;
 	$('#imageOpacity')
 		.val(OPACITY.toFixed(2))
 		.slider('setValue', OPACITY.toFixed(2));
